@@ -1,13 +1,14 @@
 import CanvasScene from './components/CanvasScene';
+import MainScene from './components/Scene';
 import Sidebar from './components/UI/Sidebar';
-import Header from './components/UI/Header';
 import './styles/global.css';
 
 const App = () => (
   <div className="app">
-    <Header />
-    <Sidebar />
-    <CanvasScene />
+    {/* <Header /> */}
+    {/* <Sidebar /> */}
+    <MainScene />
+    {/* <CanvasScene /> */}
   </div>
 );
 

@@ -6,6 +6,12 @@ import { Sky, Bvh, OrbitControls, Html } from "@react-three/drei"
 import { EffectComposer, Selection, Outline, Select, N8AO, TiltShift2, ToneMapping } from "@react-three/postprocessing"
 import { Scene } from "./Scene"
 
+const objectTypes = [
+  { id: "box", label: "🟥 Box" },
+  { id: "sphere", label: "⚪ Sphere" },
+  { id: "cone", label: "🔺 Cone" },
+];
+
 const DraggableBox = ({ position, onDelete, onReplace, onDeselect }) => {
   const meshRef = useRef();
   const [isSelected, setIsSelected] = useState(false);
@@ -15,6 +21,17 @@ const DraggableBox = ({ position, onDelete, onReplace, onDeselect }) => {
   const [rotationY, setRotationY] = useState(0);
   const [showRotationSlider, setShowRotationSlider] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  const hideTimeoutRef = useRef(null);
+
+  const resetHideTimer = () => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+    hideTimeoutRef.current = setTimeout(() => {
+      setShowRotationSlider(false);
+      setShowGallery(false);
+    }, 3000);
+  };
 
   const handlePointerDown = (event) => {
     event.stopPropagation();
@@ -142,24 +159,31 @@ export const App = () => {
   };
 
   return (
-    <Canvas camera={{ position: [0, 3, 5], fov: 50 }}>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 5, 5]} castShadow />
+    <Canvas flat dpr={[1, 1.5]} gl={{ antialias: false }} camera={{ position: [0, 3, 5], fov: 50, near: 1, far: 20 }}>
+      <ambientLight intensity={1.5 * Math.PI} />
+      <Sky />
+      {/* <directionalLight position={[5, 5, 5]} castShadow /> */}
 
-      {objects.map((obj) => (
-        <DraggableBox
-          key={obj.id}
-          position={obj.position}
-          onDelete={() => handleDelete(obj.id)}
-          onReplace={(newType) => handleReplace(obj.id, newType)}
-          onDeselect={() => {}}
-        />
-      ))}
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <Bvh firstHitOnly>
+        <Selection>
+          <Effects /> 
+          {/* <Scene rotation={[0, Math.PI / 2, 0]} position={[0, -1, -0.85]} /> */}
+            {objects.map((obj) => (
+            <DraggableBox
+              key={obj.id}
+              position={obj.position}
+              onDelete={() => handleDelete(obj.id)}
+              onReplace={(newType) => handleReplace(obj.id, newType)}
+              onDeselect={() => {}}
+            />
+          ))}
+        </Selection>
+      </Bvh>
+      
+      {/* <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[10, 10]} />
         <meshStandardMaterial color="lightgray" />
-      </mesh>
+      </mesh> */}
 
       {/* <OrbitControls /> */}
     </Canvas>
@@ -177,16 +201,16 @@ export const App1 = () => (
         <Scene rotation={[0, Math.PI / 2, 0]} position={[0, -1, -0.85]} />
       </Selection>
     </Bvh>
-    <OrbitControls />
+    {/* <OrbitControls /> */}
   </Canvas>
 )
 
 function Effects() {
   const { size } = useThree()
-  useFrame((state, delta) => {
-    easing.damp3(state.camera.position, [state.pointer.x, 1 + state.pointer.y / 2, 8 + Math.atan(state.pointer.x * 2)], 0.3, delta)
-    state.camera.lookAt(state.camera.position.x * 0.9, 0, -4)
-  })
+  // useFrame((state, delta) => {
+  //   easing.damp3(state.camera.position, [state.pointer.x, 1 + state.pointer.y / 2, 8 + Math.atan(state.pointer.x * 2)], 0.3, delta)
+  //   state.camera.lookAt(state.camera.position.x * 0.9, 0, -4)
+  // })
   return (
     <EffectComposer stencilBuffer disableNormalPass autoClear={false} multisampling={4}>
       <N8AO halfRes aoSamples={5} aoRadius={0.4} distanceFalloff={0.75} intensity={1} />

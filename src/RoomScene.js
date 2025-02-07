@@ -49,7 +49,10 @@ export function RoomScene(props) {
             objectRefs.current[selectedObjId]?.stopDragging(); // Stop previous selection
             const floorIntersect = intersects.find(intersect => intersect.object.name === "floor");
             if(floorIntersect){
-                setDragOffset(floorIntersect.point);
+              setDragOffset(floorIntersect.point);
+              console.log("move start: ", floorIntersect.point, dragOffset);
+            }else{
+              console.log("floor intersect not found");
             }
             setSelectedObjId(id); // Set new selected object
             objectRefs.current[id]?.startDragging();

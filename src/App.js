@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Sky, Bvh, OrbitControls, Html } from "@react-three/drei"
 import { EffectComposer, Selection, Outline, Select, N8AO, TiltShift2, ToneMapping } from "@react-three/postprocessing"
 import { Scene } from "./Scene"
+import { RoomScene } from "./RoomScene"
 
 const objectTypes = [
   { id: "box", label: "🟥 Box" },
@@ -145,7 +146,7 @@ const DraggableBox = ({ position, onDelete, onReplace, onDeselect }) => {
   );
 };
 
-export const App = () => {
+export const App1 = () => {
   const [objects, setObjects] = useState([{ id: 1, type: "box", position: [0, 1, 0] }]);
 
   const handleDelete = (id) => {
@@ -191,14 +192,14 @@ export const App = () => {
 }
 
 
-export const App1 = () => (
+export const App = () => (
   <Canvas flat dpr={[1, 1.5]} gl={{ antialias: false }} camera={{ position: [0, 1, 6], fov: 25, near: 1, far: 20 }}>
     <ambientLight intensity={1.5 * Math.PI} />
     <Sky />
     <Bvh firstHitOnly>
       <Selection>
         <Effects /> 
-        <Scene rotation={[0, Math.PI / 2, 0]} position={[0, -1, -0.85]} />
+        <RoomScene rotation={[0, Math.PI / 2, 0]} position={[0, -1, -0.85]} />
       </Selection>
     </Bvh>
     {/* <OrbitControls /> */}

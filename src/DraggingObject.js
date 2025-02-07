@@ -1,18 +1,50 @@
-import React, { useRef, useState, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
+import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
+import { Select } from "@react-three/postprocessing"
+import * as THREE from "three";
 
 
-const DraggableObject = ({ id, type, position, onDelete, onReplace, onDeselect }) => {
+export const DraggingObject = forwardRef(({ id, geometry, material, envMap, envMapIntensity, position, onDelete, onReplace, onDeselect, name}, ref) => {
   const meshRef = useRef();
-  const [isSelected, setIsSelected] = useState(false);
+  const { camera, raycaster, mouse, scene } = useThree();
   const [isDragging, setIsDragging] = useState(false);
+  // const [selected, setSelected] = useState(false);
+
+
+  const [isSelected, setIsSelected] = useState(false);
   const [offset, setOffset] = useState([0, 0, 0]);
   const [showMenu, setShowMenu] = useState(false);
   const [rotationY, setRotationY] = useState(0);
   const [showRotationSlider, setShowRotationSlider] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  const [hovered, hover] = useState(null)
   const hideTimeoutRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    startDragging: () => setIsDragging(true),
+    stopDragging: () => setIsDragging(false),
+    getMesh: () => meshRef.current, // Expose mesh for interaction
+    addPosition: (vector3) => {
+      if (meshRef.current) {
+        // Convert world coordinates to local if necessary
+        const worldPos = new THREE.Vector3();
+        meshRef.current.getWorldPosition(worldPos);
+        worldPos.add(vector3);
+        meshRef.current.parent?.worldToLocal(worldPos);
+        worldPos.y = meshRef.current.position.y; // Keep Y constant
+        meshRef.current.position.copy(worldPos);
+      }
+    },
+    getPosition: () => {
+      if (meshRef.current) {
+        const worldPos = new THREE.Vector3();
+        meshRef.current.getWorldPosition(worldPos);
+        return worldPos;
+      }
+      return null;
+    },
+  }));
 
   const resetHideTimer = () => {
     if (hideTimeoutRef.current) {
@@ -24,26 +56,28 @@ const DraggableObject = ({ id, type, position, onDelete, onReplace, onDeselect }
     }, 3000);
   };
 
-  const handlePointerDown = (event) => {
-    event.stopPropagation();
-    setIsSelected(true);
-    setIsDragging(true);
-    setShowMenu(false);
-  };
+  // const handlePointerDown = (event) => {
+  //   event.stopPropagation();
+  //   setIsSelected(true);
+  //   setIsDragging(true);
+  //   setShowMenu(false);
+  // };
 
   const handlePointerUp = () => {
-    setIsDragging(false);
-    setShowMenu(true);
+    if (isDragging) {
+      setIsDragging(false);
+      setShowMenu(true);
+    }
   };
 
   const handlePointerMove = (event) => {
-    if (!isDragging) return;
-    const point = event.intersections[0].point;
-    meshRef.current.position.set(
-      point.x + offset[0],
-      point.y + offset[1],
-      point.z + offset[2]
-    );
+    // if (!isDragging) return;
+    // const point = event.intersections[0].point;
+    // meshRef.current.position.set(
+    //   point.x + offset[0],
+    //   meshRef.current.position.y,
+    //   point.z + offset[2]
+    // );
   };
 
   const handleDeselect = (event) => {
@@ -63,25 +97,41 @@ const DraggableObject = ({ id, type, position, onDelete, onReplace, onDeselect }
     };
   }, []);
 
+  useFrame(() => {
+    if (isDragging) {
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children);
+      for (let intersect of intersects) {
+        // console.log("intersect: ", intersect.object.name);
+        if (intersect.object.name === "floor") {
+          // Move object on XZ plane, keep Y constant
+          meshRef.current.position.x = -intersect.point.z;
+          meshRef.current.position.z = intersect.point.x;
+          break;
+        }
+      }
+    }
+  });
+
   return (
     <>
-      <Select enabled={hovered === "BRÖNDEN"} onPointerOver={over("BRÖNDEN")} onPointerOut={() => debouncedHover(null)}>
+      <Select enabled={hovered} onPointerOver={() => hover(true)} onPointerOut={() => hover(false)} >
         <mesh
             ref={meshRef}
+            name={name}
+            geometry = {geometry}
+            material = {material}
+            material-envMap = {envMap}
             position={position}
             rotation={[0, rotationY, 0]}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerMove={handlePointerMove}
-            onPointerMissed={handleDeselect}
+            // onPointerDown={handlePointerDown}
+            // onPointerUp={handlePointerUp}
+            // onPointerMove={handlePointerMove}
+            // onPointerMissed={handleDeselect}
             castShadow
             receiveShadow
-        >
-            {type === "box" && <boxGeometry args={[1, 1, 1]} />}
-            {type === "sphere" && <sphereGeometry args={[0.7, 32, 32]} />}
-            {type === "cone" && <coneGeometry args={[0.7, 1.2, 32]} />}
-            <meshStandardMaterial color="orange" />
-        </mesh>
+            userData={{ draggable: true, id }}
+        />
       </Select>
 
       {isSelected && !isDragging && (
@@ -139,4 +189,4 @@ const DraggableObject = ({ id, type, position, onDelete, onReplace, onDeselect }
       )}
     </>
   );
-};
+});

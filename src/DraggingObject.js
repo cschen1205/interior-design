@@ -26,14 +26,14 @@ export const DraggingObject = forwardRef(({ id, geometry, material, envMap, envM
     stopDragging: () => setIsDragging(false),
     getMesh: () => meshRef.current, // Expose mesh for interaction
     addPosition: (vector3) => {
-      if (meshRef.current) {
-        // Convert world coordinates to local if necessary
-        const worldPos = new THREE.Vector3();
-        meshRef.current.getWorldPosition(worldPos);
-        worldPos.add(vector3);
-        meshRef.current.parent?.worldToLocal(worldPos);
-        worldPos.y = meshRef.current.position.y; // Keep Y constant
-        meshRef.current.position.copy(worldPos);
+      if (meshRef.current && vector3.equals(new THREE.Vector3(0, 0, 0)) === false) {
+          // Convert world coordinates to local if necessary
+          const worldPos = new THREE.Vector3();
+          meshRef.current.getWorldPosition(worldPos);
+          worldPos.add(vector3);
+          meshRef.current.parent?.worldToLocal(worldPos);
+          worldPos.y = meshRef.current.position.y; // Keep Y constant
+          meshRef.current.position.copy(worldPos);
       }
     },
     getPosition: () => {
@@ -97,21 +97,21 @@ export const DraggingObject = forwardRef(({ id, geometry, material, envMap, envM
     };
   }, []);
 
-  useFrame(() => {
-    if (isDragging) {
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children);
-      for (let intersect of intersects) {
-        // console.log("intersect: ", intersect.object.name);
-        if (intersect.object.name === "floor") {
-          // Move object on XZ plane, keep Y constant
-          meshRef.current.position.x = -intersect.point.z;
-          meshRef.current.position.z = intersect.point.x;
-          break;
-        }
-      }
-    }
-  });
+  // useFrame(() => {
+  //   if (isDragging) {
+  //     raycaster.setFromCamera(mouse, camera);
+  //     const intersects = raycaster.intersectObjects(scene.children);
+  //     for (let intersect of intersects) {
+  //       // console.log("intersect: ", intersect.object.name);
+  //       if (intersect.object.name === "floor") {
+  //         // Move object on XZ plane, keep Y constant
+  //         meshRef.current.position.x = -intersect.point.z;
+  //         meshRef.current.position.z = intersect.point.x;
+  //         break;
+  //       }
+  //     }
+  //   }
+  // });
 
   return (
     <>

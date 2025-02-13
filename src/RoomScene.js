@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { debounce, set } from "lodash"
 import { useGLTF, useEnvironment, Text } from "@react-three/drei"
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -11,15 +11,20 @@ export function RoomScene(props) {
     const objectRefs = useRef({}); // Store all DraggingObject refs in a dictionary
     const { camera, raycaster, mouse, scene } = useThree();
     const [selectedObjId, setSelectedObjId] = useState(null);
-    const [dragOffset, setDragOffset] = useState([0, 0, 0]);
+    const [dragOffset, setDragOffset] = useState(null);
   // Load model
   const { nodes, materials } = useGLTF("/kitchen-transformed.glb")
   // Load environment (using it only on the chairs, for reflections)
   const env = useEnvironment({ preset: "city" })
   const [objects, setObjects] = useState([{ id: 1, type: "box", position: [0, 1, 0] }]);
 
+  useEffect(() => {
+    console.log("Updated dragOffset: ", dragOffset, selectedObjId);
+  }, [dragOffset, selectedObjId]);
+
   useFrame(() => {
     if (selectedObjId && objectRefs.current[selectedObjId]) {
+      console.log("selectedObjId: ", selectedObjId);
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(scene.children, true);
       console.log("floor intersect0: ", intersects.length);
@@ -27,8 +32,9 @@ export function RoomScene(props) {
         const floorIntersect = intersects.find(intersect => intersect.object.name === "floor");
         if (floorIntersect) {
             const p = floorIntersect.point.clone().sub(dragOffset);
-            console.log("floor intersect: ", floorIntersect.point, p);
+            console.log("floor intersect: ", floorIntersect.point, p, dragOffset);
           objectRefs.current[selectedObjId]?.addPosition(p);
+          setDragOffset(floorIntersect.point.clone());
         }
       }
     }
@@ -48,14 +54,15 @@ export function RoomScene(props) {
         if(objectRefs.current[id]){
             objectRefs.current[selectedObjId]?.stopDragging(); // Stop previous selection
             const floorIntersect = intersects.find(intersect => intersect.object.name === "floor");
-            if(floorIntersect){
-              setDragOffset(floorIntersect.point);
+            if(floorIntersect && dragOffset == null){
+              setDragOffset(floorIntersect.point.clone());
               console.log("move start: ", floorIntersect.point, dragOffset);
             }else{
               console.log("floor intersect not found");
             }
             setSelectedObjId(id); // Set new selected object
             objectRefs.current[id]?.startDragging();
+            console.log("move start0: ", selectedObjId, dragOffset);
             return;
         }
       }
@@ -68,6 +75,7 @@ export function RoomScene(props) {
     if(selectedObjId != null){
         objectRefs.current[selectedObjId]?.stopDragging();
         console.log("move end: ", objectRefs.current[selectedObjId].getPosition());
+        setDragOffset(null);
         setSelectedObjId(null);
     }
   };

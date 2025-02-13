@@ -9,25 +9,24 @@ export const DraggingObject = forwardRef(({ id, geometry, material, envMap, envM
   const meshRef = useRef();
   const { camera, raycaster, mouse, scene } = useThree();
   const [isDragging, setIsDragging] = useState(false);
-  // const [selected, setSelected] = useState(false);
-
-
   const [isSelected, setIsSelected] = useState(false);
+  const [showRotationSlider, setShowRotationSlider] = useState(false);
+
+
   const [offset, setOffset] = useState([0, 0, 0]);
   const [showMenu, setShowMenu] = useState(false);
   const [rotationY, setRotationY] = useState(0);
-  const [showRotationSlider, setShowRotationSlider] = useState(false);
-  const [showGallery, setShowGallery] = useState(false);
+  
   const [hovered, hover] = useState(null)
   const hideTimeoutRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     startDragging: () => setIsDragging(true),
     stopDragging: () => setIsDragging(false),
+    select: (flag) => setIsSelected(flag),
     getMesh: () => meshRef.current, // Expose mesh for interaction
     addPosition: (vector3) => {
       if (meshRef.current && vector3.equals(new THREE.Vector3(0, 0, 0)) === false) {
-          // Convert world coordinates to local if necessary
           const worldPos = new THREE.Vector3();
           meshRef.current.getWorldPosition(worldPos);
           worldPos.add(vector3);
@@ -44,74 +43,31 @@ export const DraggingObject = forwardRef(({ id, geometry, material, envMap, envM
       }
       return null;
     },
+    getDragging: () => isDragging,
   }));
 
-  const resetHideTimer = () => {
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-    }
-    hideTimeoutRef.current = setTimeout(() => {
-      setShowRotationSlider(false);
-      setShowGallery(false);
-    }, 3000);
-  };
-
-  // const handlePointerDown = (event) => {
-  //   event.stopPropagation();
-  //   setIsSelected(true);
-  //   setIsDragging(true);
-  //   setShowMenu(false);
+  // const resetHideTimer = () => {
+  //   if (hideTimeoutRef.current) {
+  //     clearTimeout(hideTimeoutRef.current);
+  //   }
+  //   hideTimeoutRef.current = setTimeout(() => {
+  //     setShowRotationSlider(false);
+  //     setShowGallery(false);
+  //   }, 3000);
   // };
 
-  const handlePointerUp = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      setShowMenu(true);
-    }
-  };
+  // const handleSelection = (flag) => {
+  //   setIsSelected(flase);
 
-  const handlePointerMove = (event) => {
-    // if (!isDragging) return;
-    // const point = event.intersections[0].point;
-    // meshRef.current.position.set(
-    //   point.x + offset[0],
-    //   meshRef.current.position.y,
-    //   point.z + offset[2]
-    // );
-  };
-
-  const handleDeselect = (event) => {
-    event.stopPropagation();
-    setIsSelected(false);
-    setShowMenu(false);
-    setShowRotationSlider(false);
-    setShowGallery(false);
-    onDeselect();
-  };
+  // };
 
   useEffect(() => {
-    return () => {
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-      }
-    };
-  }, []);
+    if(!isSelected || isDragging){
+      setShowRotationSlider(false);
+    }
 
-  // useFrame(() => {
-  //   if (isDragging) {
-  //     raycaster.setFromCamera(mouse, camera);
-  //     const intersects = raycaster.intersectObjects(scene.children);
-  //     for (let intersect of intersects) {
-  //       // console.log("intersect: ", intersect.object.name);
-  //       if (intersect.object.name === "floor") {
-  //         // Move object on XZ plane, keep Y constant
-  //         meshRef.current.position.x = -intersect.point.z;
-  //         meshRef.current.position.z = intersect.point.x;
-  //         break;
-  //       }
-  //     }
-  //   }
-  // });
+    console.log("show rotation slider: ", showRotationSlider, isSelected, isDragging);
+  }, [showRotationSlider, isSelected, isDragging]);
 
   return (
     <>
@@ -135,44 +91,55 @@ export const DraggingObject = forwardRef(({ id, geometry, material, envMap, envM
       </Select>
 
       {isSelected && !isDragging && (
-        <Html position={[0, 1.2, 0]} center>
-          <div style={{ background: "white", padding: "5px", borderRadius: "5px", boxShadow: "0px 0px 10px rgba(0,0,0,0.2)" }}>
-            <button onClick={() => setShowMenu(!showMenu)}>⚙️ Options</button>
-          </div>
-        </Html>
+        <Html position={[meshRef.current.position.x, meshRef.current.position.y + 1, meshRef.current.position.z]}>
+        <div
+          style={{
+            background: "black",
+            color: "white",
+            padding: "5px",
+            borderRadius: "5px",
+            display: "flex",
+            gap: "5px",
+            boxShadow: "0px 0px 10px rgba(0,0,0,0.2)",
+            pointerEvents: "auto"
+          }}
+        >
+          <button onClick={(e) =>{e.stopPropagation(); console.log("on click!"); setShowRotationSlider(!showRotationSlider)}}>🔄 Rotate</button>
+          <button>⮀ Replace</button>
+          <button>📑 Duplicate</button>
+          <button>🗑️ Remove</button>
+        </div>
+      </Html>
+        // <Html position={[0, 1.6, 0]} center>
+        //   <div style={{ background: "white", padding: "10px", borderRadius: "5px", boxShadow: "0px 0px 10px rgba(0,0,0,0.2)", display: "flex", gap: "10px" }}>
+        //     <button onClick={onDelete}>🗑 Delete</button>
+        //     <button
+        //       onMouseEnter={() => {
+        //         setShowRotationSlider(true);
+        //         resetHideTimer();
+        //       }}
+        //       onMouseLeave={resetHideTimer}
+        //     >
+        //       🔄 Rotate
+        //     </button>
+        //     <button
+        //       onMouseEnter={() => {
+        //         setShowGallery(true);
+        //         resetHideTimer();
+        //       }}
+        //       onMouseLeave={resetHideTimer}
+        //     >
+        //       🔄 Replace
+        //     </button>
+        //   </div>
+        // </Html>
       )}
 
-      {showMenu && !isDragging && (
-        <Html position={[0, 1.6, 0]} center>
-          <div style={{ background: "white", padding: "10px", borderRadius: "5px", boxShadow: "0px 0px 10px rgba(0,0,0,0.2)", display: "flex", gap: "10px" }}>
-            <button onClick={onDelete}>🗑 Delete</button>
-            <button
-              onMouseEnter={() => {
-                setShowRotationSlider(true);
-                resetHideTimer();
-              }}
-              onMouseLeave={resetHideTimer}
-            >
-              🔄 Rotate
-            </button>
-            <button
-              onMouseEnter={() => {
-                setShowGallery(true);
-                resetHideTimer();
-              }}
-              onMouseLeave={resetHideTimer}
-            >
-              🔄 Replace
-            </button>
-          </div>
-        </Html>
-      )}
-
-      {showRotationSlider && (
-        <Html position={[0, 2, 0]} center>
+      {isSelected && !isDragging && showRotationSlider && (
+        <Html position={[meshRef.current.position.x, meshRef.current.position.y + 1.8, meshRef.current.position.z]}>
           <div
-            onMouseEnter={resetHideTimer}
-            onMouseLeave={resetHideTimer}
+            // onMouseEnter={resetHideTimer}
+            // onMouseLeave={resetHideTimer}
             style={{ background: "white", padding: "10px", borderRadius: "5px", boxShadow: "0px 0px 10px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", alignItems: "center" }}
           >
             <label>Rotation</label>
@@ -187,6 +154,31 @@ export const DraggingObject = forwardRef(({ id, geometry, material, envMap, envM
           </div>
         </Html>
       )}
+
+      {/* {isSelected && showGallery && (
+        <Html position={[worldPosition.x, worldPosition.y + 2.5, worldPosition.z]} center>
+          <div
+            style={{
+              background: "white",
+              padding: "10px",
+              borderRadius: "5px",
+              boxShadow: "0px 0px 10px rgba(0,0,0,0.2)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center"
+            }}
+          >
+            <h4>Select a Replacement</h4>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {geometries.map((geo, index) => (
+                <button key={index} onClick={() => handleReplace(geo, materials[index])} style={{ padding: "5px" }}>
+                  <img src={`/thumbnails/object${index + 1}.png`} alt={`Object ${index + 1}`} width="50" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </Html>
+      )} */}
     </>
   );
 });

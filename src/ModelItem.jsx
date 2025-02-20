@@ -13,8 +13,8 @@ export const ModelItem = (model) => {
             className="p-2 bg-white shadow-md rounded-md cursor-pointer"
             whileHover={{ scale: 1.1 }}
         >
-            <img src={model.image} alt={model.name} className="w-20 h-20" />
-            <p className="text-center">{model.name}</p>
+            <img src={model.model.image} alt={model.model.name} className='w-20 h-20' />
+            <p className="text-center">{model.model.name}</p>
         </motion.div>
     );
 }

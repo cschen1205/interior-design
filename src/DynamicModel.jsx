@@ -1,11 +1,11 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable react/no-unknown-property */
-import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef, useMemo } from "react";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { useGLTF, OrbitControls, Html } from "@react-three/drei";
 import { Select } from "@react-three/postprocessing"
 import * as THREE from "three";
-import { set } from "lodash";
+import { get, set } from "lodash";
 
 
 export const DynamicModel = forwardRef(({ model }, ref) => {
@@ -13,15 +13,14 @@ export const DynamicModel = forwardRef(({ model }, ref) => {
   const [position, setPosition] = useState(model.position);
 
   const { scene } = useGLTF(model.model.path);
+  // const gltf = useLoader(GLTFLoader, "/model.glb");
 
   const [isDragging, setIsDragging] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
-  const [showRotationSlider, setShowRotationSlider] = useState(false);
 
-  const [rotationY, setRotationY] = useState(0);
+  const [rotationY, setRotationY] = useState(model.model.rotationY);
   
   const [hovered, hover] = useState(null)
-  let offset = new THREE.Vector3();
 
   useImperativeHandle(ref, () => ({
     startDragging: () => setIsDragging(true),
@@ -29,7 +28,6 @@ export const DynamicModel = forwardRef(({ model }, ref) => {
     select: (flag) => setIsSelected(flag),
     getMesh: () => meshRef.current, // Expose mesh for interaction
     setPosition: (vector3) => setPosition(vector3),
-    setOffset: (vector3) => offset = vector3,
     addPosition: (vector3) => {
       if (meshRef.current && vector3.equals(new THREE.Vector3(0, 0, 0)) === false) {
           const worldPos = new THREE.Vector3();
@@ -44,20 +42,37 @@ export const DynamicModel = forwardRef(({ model }, ref) => {
     getPosition: () => {
       return position;
     },
+    setRotation: (angle) => setRotationY(angle),
+    getRotation: () => rotationY,
     getDragging: () => isDragging,
   }));
 
   useEffect(() => {
-    if(!isSelected || isDragging){
-      setShowRotationSlider(false);
+    if(isSelected && !isDragging){
+      hover(true);
+    }else{
+      hover(false);
     }
     // console.log("show rotation slider: ", showRotationSlider, isSelected, isDragging);
-  }, [showRotationSlider, isSelected, isDragging]);
+  }, [isSelected, isDragging]);
+
+  const clonedScene = useMemo(() => {
+    const cloned = scene.clone(true); // Deep clone to preserve materials
+    cloned.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return cloned;
+  }, [scene]);
+
 
   return (
     <>
-      <Select enabled={hovered} onPointerOver={() => hover(true)} onPointerOut={() => hover(false)}>
-        <primitive ref={meshRef} object={scene.clone()} position={position} userData={{ draggable: true, id: model.id }} />
+      <Select enabled={hovered} onPointerOver={() => hover(true)} onPointerOut={() => hover(isSelected && !isDragging)}>
+        <primitive ref={meshRef} object={clonedScene} scale={new THREE.Vector3(model.model.scale, model.model.scale, model.model.scale)} 
+        position={position} rotation={[0, rotationY, 0]} userData={{ draggable: true, id: model.id }} />
       </Select>
     </>
   );

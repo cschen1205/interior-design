@@ -1,25 +1,19 @@
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { useDrop } from "react-dnd";
 import { useRef } from "react";
 import { Environment, Sky, Bvh, Lightformer } from "@react-three/drei";
-import { EffectComposer, Selection, Outline, N8AO, TiltShift2, ToneMapping } from "@react-three/postprocessing"
+import { EffectComposer, Selection, Outline, N8AO, TiltShift2, ToneMapping, Bloom, SSAO, ChromaticAberration, Vignette } from "@react-three/postprocessing"
+import { BlendFunction } from "postprocessing";
 import { RoomScene } from "./RoomScene.jsx";
 import { easing } from "maath"
 import { suspend } from 'suspend-react';
+import { Vector2, EquirectangularReflectionMapping } from "three";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
 export const MainScene = (props) => {
     const sceneRef = useRef();
 
-    const city = import('@pmndrs/assets/hdri/city.exr')
-
-    // const [bad, set] = useState(false)
-    // const { impl, debug, enabled, samples, ...config } = useControls({
-    //     debug: true,
-    //     enabled: true,
-    //     size: { value: 35, min: 0, max: 100, step: 0.1 },
-    //     focus: { value: 0.5, min: 0, max: 2, step: 0.1 },
-    //     samples: { value: 16, min: 1, max: 40, step: 1 }
-    // })
+    const hdri = useLoader(RGBELoader, "/hdr/environment.hdr");
     
     const [, drop] = useDrop(() => ({
         accept: "MODEL",
@@ -32,12 +26,10 @@ export const MainScene = (props) => {
 
     return (
         <div ref={drop} className="relative w-full h-screen">
-            <Canvas shadows flat dpr={[1, 1.5]} gl={{ antialias: false }} camera={{ position: [-1.2, 2.05, -6.34], fov: 25, near: 1, far: 20 }}>
-                <ambientLight intensity={1 * Math.PI} />
-                <Environment preset="apartment" >
-                    <Lightformer form="rect" intensity={1} color="white" scale={[10, 5]} target={[0, 0, 0]} />
-                </Environment>
-                {/* <Environment files={suspend(city).default} /> */}
+            <Canvas shadows flat dpr={[1, 1.5]} gl={{ antialias: false }} camera={{ position: [0, 2.1, -6.5], fov: 25, near: 1, far: 20 }}>
+                <ambientLight intensity={1.4 * Math.PI} />
+                {/* <Environment preset="apartment" background={true} /> */}
+                <HDRSky hdrPath="/hdr/environment.hdr" />
                 <directionalLight
                     castShadow
                     position={[5, 5, 5]}
@@ -70,17 +62,35 @@ function Light() {
       </group>
     )
   }
+
+function HDRSky({ hdrPath }) {
+    const { scene, renderer } = useThree();
+    const hdri = useLoader(RGBELoader, hdrPath);
+
+    // Set HDR as environment & background
+    hdri.mapping = EquirectangularReflectionMapping;
+    scene.background = hdri; // Set as sky
+    scene.environment = hdri; // Set as light source
+
+    // renderer.toneMapping = ACESFilmicToneMapping;
+    // renderer.toneMappingExposure = 1.5;
+    // renderer.outputEncoding = sRGBEncoding;
+
+    return null;
+}
   
 
 function Effects() {
     const { size } = useThree();
 
     return (
-        <EffectComposer stencilBuffer disableNormalPass autoClear={false} multisampling={4}>
+        <EffectComposer stencilBuffer enableNormalPass autoClear={false} multisampling={4}>
             <N8AO halfRes aoSamples={5} aoRadius={0.4} distanceFalloff={0.75} intensity={1} />
             <Outline visibleEdgeColor="blue" hiddenEdgeColor="blue" blur width={size.width * 1.25} edgeStrength={20} />
-            <TiltShift2 samples={5} blur={0.1} />
-            {/* <ToneMapping /> */}
+            {/* <TiltShift2 samples={5} blur={0.1} /> */}
+            <ToneMapping />
+            {/* <Bloom intensity={0.15} luminanceThreshold={0.6} luminanceSmoothing={0.3} /> */}
+            <Vignette eskil={false} offset={0.15} darkness={0.6} />
         </EffectComposer>
     );
 }

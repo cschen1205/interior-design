@@ -1,55 +1,36 @@
-import { Canvas, useLoader } from "@react-three/fiber";
+import { Canvas, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useEffect, useMemo } from "react";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { useGLTF, Html } from "@react-three/drei";
-import { DynamicModel } from "./DynamicModel.jsx";
+import * as THREE from "three";
 
-function Model() {
-  // const gltf = useLoader(GLTFLoader, "/models/modelA.glb");
+function HDRCube() {
+  const { scene } = useThree();
 
-  const { scene } = useGLTF("/models/modelA.glb");
+  // Load HDR images for the six faces of the cube
+  const hdrCubeTexture = useLoader(THREE.CubeTextureLoader, [
+    "/hdr/px.hdr", // +X
+    "/hdr/nx.hdr", // -X
+    "/hdr/py.hdr", // +Y
+    "/hdr/ny.hdr", // -Y
+    "/hdr/pz.hdr", // +Z
+    "/hdr/nz.hdr", // -Z
+  ]);
 
-  // Clone and enable shadows
-  const clonedScene = useMemo(() => {
-    const cloned = scene.clone(true); // Deep clone to preserve materials
-    cloned.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    return cloned;
-  }, [scene]);
-
-  return <primitive object={clonedScene} />;
+  scene.background = hdrCubeTexture; // Set as skybox
+  return null;
 }
 
 export default function App() {
-  const models = [
-    {model: { id: "1", name: "Model A", path: "/models/modelA.glb", image: "models/modelA.jpg" }, id: "1", position: [0, 0, 0]},
-  ];
-
   return (
-    <Canvas shadows camera={{ position: [3, 3, 3], fov: 50 }}>
-      {/* Lights */}
-      <ambientLight intensity={0.3} />
-      <directionalLight
-        position={[5, 5, 5]}
-        castShadow
-        intensity={1}
-        shadow-mapSize={[2048, 2048]}
-      />
+    <Canvas camera={{ position: [0, 2, 5] }}>
+      <HDRCube />
 
-      {/* 3D Model */}
-      <DynamicModel model={models[0]} />
-
-      {/* Floor for shadows */}
-      <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
-        <shadowMaterial opacity={0.5} />
+      {/* Example Object inside the Cube */}
+      <mesh>
+        <sphereGeometry args={[0.5, 64, 64]} />
+        <meshStandardMaterial metalness={1} roughness={0} />
       </mesh>
 
+      <ambientLight intensity={0.5} />
       <OrbitControls />
     </Canvas>
   );

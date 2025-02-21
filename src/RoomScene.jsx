@@ -117,7 +117,7 @@ export const RoomScene = forwardRef(( props, ref) => {
   };
 
   const selectObject = (id) => {
-    console.log("selectObject: ", id, camera.position);
+    console.log("selectObject: ", id, camera.position, camera.rotation);
     if(selectedObjId != id){
       if(selectedObjId != null){
         objectRefs.current[selectedObjId]?.select(false);
@@ -179,7 +179,7 @@ export const RoomScene = forwardRef(( props, ref) => {
       {selectedObjId == null && (<OrbitControls />)}
       {/* <Suspense fallback={null}> */}
         <group onPointerDown={onPointerDown} onPointerUp={onPointerUp} {...props}>
-        <Room env={env}/>
+        <Room />
           {Object.entries(placedModels).map(([k, m]) => (
             <Suspense key={k} fallback={<PlaceholderBox model={m} />} >
               <DynamicModel key={k} ref={(el) => (objectRefs.current[k]=el)} model={m}/>
@@ -239,8 +239,8 @@ function Room({env}) {
       <mesh geometry={nodes.bottle.geometry} material={materials.gray} material-envMap={env} receiveShadow/>
       <mesh geometry={nodes.walls_1.geometry} material={materials.floor} userData={{name:"f1"}} receiveShadow/>
       <mesh geometry={nodes.walls_2.geometry} material={materials.walls} receiveShadow/>
-      <mesh geometry={nodes.plant_1.geometry} material={materials.potted_plant_01_leaves} receiveShadow/>
-      <mesh geometry={nodes.plant_2.geometry} material={materials.potted_plant_01_pot} receiveShadow/>
+      {/* <mesh geometry={nodes.plant_1.geometry} material={materials.potted_plant_01_leaves} receiveShadow/> */}
+      {/* <mesh geometry={nodes.plant_2.geometry} material={materials.potted_plant_01_pot} receiveShadow/> */}
       <mesh geometry={nodes.cuttingboard.geometry} material={materials.walls} receiveShadow/>
       <mesh geometry={nodes.bowl.geometry} material={materials.walls} receiveShadow/>
       <mesh geometry={nodes.carpet.geometry} material={materials.carpet} material-envMap={env} material-envMapIntensity={0.5} receiveShadow/>
